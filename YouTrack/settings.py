@@ -24,7 +24,7 @@ SECRET_KEY = 'django-insecure-cw8j)=@$gan(=8=g@k2&z1$kn)5z^%rw6!4%vr6apw9u$q42ri
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["yt-api.xmichael446.com", "localhost", "127.0.0.1"]
 
 INSTALLED_APPS = [
     "django_admin_dracula",
