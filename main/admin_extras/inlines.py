@@ -1,7 +1,7 @@
 import nested_admin
 from django.contrib import admin
 
-from main.models import Enrollment, Group, BadgeCriteria
+from main.models import Enrollment, Group
 
 
 class EnrollmentInline(nested_admin.NestedTabularInline):
@@ -15,11 +15,3 @@ class GroupInline(nested_admin.NestedStackedInline):
     extra = 1
     readonly_fields = ("access_code",)
     inlines = [EnrollmentInline]
-
-
-class BadgeCriteriaInline(admin.StackedInline):
-    model = BadgeCriteria
-    extra = 0
-    max_num = 1
-    can_delete = True
-    fk_name = "badge"

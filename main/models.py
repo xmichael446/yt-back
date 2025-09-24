@@ -79,8 +79,8 @@ class Enrollment(TimestampedModel):
 
 class PointReason(TimestampedModel):
     name = models.CharField(max_length=255, unique=True)
-    default_points = models.IntegerField(default=0)
-    default_coins = models.IntegerField(default=0)
+    default_points = models.PositiveIntegerField(default=0)
+    default_coins = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return self.name
@@ -96,7 +96,7 @@ class PointEntry(TimestampedModel):
 
 class Reward(TimestampedModel):
     name = models.CharField(max_length=255)
-    cost = models.IntegerField()
+    cost = models.PositiveIntegerField(default=0)
     link = models.URLField(max_length=255, blank=True, null=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="rewards")
 
@@ -112,38 +112,11 @@ class RewardRedemption(TimestampedModel):
         return f"{self.enrollment} redeemed {self.reward}"
 
 
-class BadgeCriteria(TimestampedModel):
-    CRITERIA_TYPES = [
-        ("points", "Points Threshold"),
-        ("rank", "Rank Reached"),
-    ]
-
-    name = models.CharField(max_length=255)
-    type = models.CharField(max_length=50, choices=CRITERIA_TYPES)
-    value = models.CharField(max_length=255)
-    badge = models.OneToOneField(
-        "Badge",
-        on_delete=models.CASCADE,
-        related_name="criteria",
-        blank=True,
-        null=True
-    )
+class ActivityEntry(TimestampedModel):
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name="activities")
+    action = models.CharField(max_length=255)
+    points = models.PositiveIntegerField(default=0)
+    coins_change = models.IntegerField(default=0, help_text="Coins earned (positive) or spent (negative)")
 
     def __str__(self):
-        return f"{self.name} ({self.type}={self.value})"
-
-class Badge(TimestampedModel):
-    name = models.CharField(max_length=255)
-    description = models.CharField(max_length=1000, blank=True, null=True)
-    icon = models.CharField(max_length=255, blank=True, null=True)
-
-    def __str__(self):
-        return self.name
-
-
-class AwardedBadge(TimestampedModel):
-    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name="awarded_badges")
-    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name="awards")
-
-    def __str__(self):
-        return f"{self.enrollment} awarded {self.badge}"
+        return f"{self.enrollment.student} | {self.action} | XP: {self.points} | Coins: {self.coins_change}"

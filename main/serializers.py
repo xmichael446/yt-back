@@ -1,6 +1,6 @@
 # serializers.py
 from rest_framework import serializers
-from .models import Student, Group, Enrollment, Course, Reward, RewardRedemption, PointEntry
+from .models import Student, Group, Enrollment, Course, Reward, RewardRedemption, PointEntry, ActivityEntry
 
 
 class EnrollmentCheckSerializer(serializers.Serializer):
@@ -24,6 +24,7 @@ class EnrollmentSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         return f"{obj.student.first_name} {obj.student.last_name}"
 
+
 class RewardSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reward
@@ -33,29 +34,20 @@ class RewardSerializer(serializers.ModelSerializer):
 class RewardRedemptionSerializer(serializers.ModelSerializer):
     reward = RewardSerializer(read_only=True)
     awarded = serializers.SerializerMethodField()
+    link = serializers.SerializerMethodField()
 
     class Meta:
         model = RewardRedemption
-        fields = ["id", "reward", "awarded"]
+        fields = ["id", "reward", "awarded", "link"]
 
     def get_awarded(self, obj):
         return obj.created_at
 
+    def get_link(self, obj):
+        return obj.reward.link
+
 
 class ActivitySerializer(serializers.ModelSerializer):
-    reason = serializers.SerializerMethodField()
-    points = serializers.SerializerMethodField()
-    coins = serializers.SerializerMethodField()
-
     class Meta:
-        model = PointEntry
-        fields = ["reason", "created_at", "points", "coins"]
-
-    def get_reason(self, obj):
-        return obj.reason.name
-
-    def get_points(self, obj):
-        return obj.reason.default_points
-
-    def get_coins(self, obj):
-        return obj.reason.default_coins
+        model = ActivityEntry
+        fields = ["action", "created_at", "points", "coins_change"]

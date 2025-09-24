@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Student, Group, Enrollment, Reward, RewardRedemption, PointEntry
+from .models import Student, Group, Enrollment, Reward, RewardRedemption, PointEntry, ActivityEntry
 from .serializers import EnrollmentCheckSerializer, GroupSerializer, \
     EnrollmentSerializer, RewardRedemptionSerializer, RewardSerializer, ActivitySerializer
 
@@ -177,8 +177,12 @@ class RewardClaimView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        enrollment.balance -= reward.cost
-        enrollment.save()
+        ActivityEntry.objects.create(
+            enrollment=enrollment,
+            action=f'Claimed "{reward.name}"',
+            points=0,
+            coins_change=-reward.cost,
+        )
 
         redemption = RewardRedemption.objects.create(enrollment=enrollment, reward=reward)
         redemption_data = RewardRedemptionSerializer(redemption).data
@@ -208,7 +212,7 @@ class ActivitiesView(APIView):
             Enrollment, student=student, group=group
         )
 
-        point_entries_qs = PointEntry.objects.filter(enrollment=enrollment)
+        point_entries_qs = enrollment.activities.all()
         point_entries = ActivitySerializer(point_entries_qs, many=True).data[::-1][:50]
 
         return Response(
