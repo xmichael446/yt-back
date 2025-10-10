@@ -1,7 +1,7 @@
 import requests
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from .models import PointEntry, ActivityEntry
+from .models import PointEntry, ActivityEntry, Student
 from .utils.signals import update_coins_and_total_points, update_ranks_for_course
 
 
@@ -31,24 +31,31 @@ def handle_pointentry_save(sender, instance, created, **kwargs):
         )
 
 
-# @receiver(post_save, sender=Student)
-# def create_cd_mock_student(sender, instance, created, **kwargs):
-#     if created:
-#         url = "http://localhost:8000/api/add_candidate/"
-#
-#         payload = {
-#             "candidate_id": instance.access_code,
-#             "first_name": instance.first_name,
-#             "last_name": instance.last_name,
-#             "created_by": instance.created_by.username,
-#         }
-#
-#         try:
-#             res = requests.post(
-#                 url,
-#                 json=payload,
-#                 timeout=5
-#             )
-#             res.raise_for_status()
-#         except Exception as e:
-#             print(f"Error sending to other server: {e}")
+@receiver(post_save, sender=Student)
+def create_cd_mock_student(sender, instance, created, **kwargs):
+    if created:
+        url = "https://cd-mock-api.xmichael446.com/api/add_candidate/"
+
+        payload = {
+            "candidate_id": instance.access_code,
+            "first_name": instance.first_name,
+            "last_name": instance.last_name,
+            "created_by": instance.created_by.username,
+        }
+
+        headers = {
+            "Content-Type": "application/json",
+            "X-API-KEY": "QODIRALI_ABDUSAMATOV",
+        }
+
+        try:
+            res = requests.post(
+                url,
+                json=payload,
+                headers=headers,
+                timeout=5,
+            )
+            res.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Error sending to other server: {e}")
+
