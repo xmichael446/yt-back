@@ -42,14 +42,15 @@ class EnrollmentAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
         return qs.filter(Q(student__created_by=request.user) | Q(group__coordinator=request.user))
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "student":
-            kwargs["queryset"] = Student.objects.filter(created_by=request.user)
+        if not request.user.is_superuser:
+            if db_field.name == "student":
+                kwargs["queryset"] = Student.objects.filter(created_by=request.user)
 
-        if db_field.name == "group":
-            kwargs["queryset"] = (
-                self.model._meta.get_field("group")
-                .remote_field.model.objects.filter(course__created_by=request.user)
-            )
+            if db_field.name == "group":
+                kwargs["queryset"] = (
+                    self.model._meta.get_field("group")
+                    .remote_field.model.objects.filter(course__created_by=request.user)
+                )
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
@@ -97,10 +98,11 @@ class RewardAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "course":
-            kwargs["queryset"] = (
-                self.model._meta.get_field("course")
-                .remote_field.model.objects.filter(created_by=request.user)
-            )
+            if not request.user.is_superuser:
+                kwargs["queryset"] = (
+                    self.model._meta.get_field("course")
+                    .remote_field.model.objects.filter(created_by=request.user)
+                )
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
