@@ -1,5 +1,6 @@
 import nested_admin
 from django.contrib import admin
+from django.db.models import Q
 
 from .admin_extras.inlines import GroupInline
 from .admin_extras.mixins import UserOwnedQuerysetMixin, AutoCreatedByMixin
@@ -38,7 +39,7 @@ class EnrollmentAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
     search_fields = ("student__first_name", "student__last_name", "group__name")
 
     def filter_for_user(self, qs, request):
-        return qs.filter(student__created_by=request.user)
+        return qs.filter(Q(student__created_by=request.user) | Q(group__coordinator=request.user))
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "student":
@@ -70,14 +71,18 @@ class PointEntryAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
     )
 
     def filter_for_user(self, qs, request):
-        return qs.filter(enrollment__student__created_by=request.user)
+        return qs.filter(Q(enrollment__student__created_by=request.user) | Q(enrollment__group__coordinator=request.user))
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "enrollment":
-            kwargs["queryset"] = (
-                self.model._meta.get_field("enrollment")
-                .remote_field.model.objects.filter(student__created_by=request.user)
-            )
+            Enrollment = self.model._meta.get_field("enrollment").remote_field.model
+
+            if request.user.is_superuser:
+                kwargs["queryset"] = Enrollment.objects.all()
+            else:
+                kwargs["queryset"] = Enrollment.objects.filter(
+                    group__coordinator=request.user
+                )
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
@@ -116,4 +121,4 @@ class ActivityEntryAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
     ordering = ("-created_at",)
 
     def filter_for_user(self, qs, request):
-        return qs.filter(enrollment__student__created_by=request.user)
+        return qs.filter(Q(enrollment__student__created_by=request.user) | Q(enrollment__group__coordinator=request.user))
