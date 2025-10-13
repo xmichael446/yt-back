@@ -20,6 +20,18 @@ def handle_activityentry_save(sender, instance, created, **kwargs):
     update_ranks_for_course(course)
 
 
+@receiver(post_delete, sender=ActivityEntry)
+def handle_activityentry_delete(sender, instance, **kwargs):
+    enrollment = instance.enrollment
+
+    enrollment.total_points -= instance.points
+    enrollment.balance -= instance.coins_change
+    enrollment.save(update_fields=["total_points", "balance"])
+
+    course = enrollment.group.course
+    update_ranks_for_course(course)
+
+
 @receiver(post_save, sender=PointEntry)
 def handle_pointentry_save(sender, instance, created, **kwargs):
     if created:
@@ -28,7 +40,17 @@ def handle_pointentry_save(sender, instance, created, **kwargs):
             action=instance.reason.name.lower().capitalize(),
             points=instance.reason.default_points,
             coins_change=instance.reason.default_coins,
+            linked_point_entry=instance
         )
+
+
+@receiver(post_delete, sender=PointEntry)
+def handle_pointentry_delete(sender, instance, **kwargs):
+    try:
+        activity = ActivityEntry.objects.get(linked_point_entry=instance)
+        activity.delete()
+    except ActivityEntry.DoesNotExist:
+        pass
 
 
 @receiver(post_save, sender=Student)

@@ -118,6 +118,7 @@ class ActivityEntry(TimestampedModel):
     action = models.CharField(max_length=255)
     points = models.PositiveIntegerField(default=0)
     coins_change = models.IntegerField(default=0, help_text="Coins earned (positive) or spent (negative)")
+    linked_point_entry = models.ForeignKey(PointEntry, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return f"{self.enrollment.student} | {self.action} | XP: {self.points} | Coins: {self.coins_change}"
