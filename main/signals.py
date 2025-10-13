@@ -2,7 +2,7 @@ import requests
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from .models import PointEntry, ActivityEntry, Student
-from .utils.signals import update_coins_and_total_points, update_ranks_for_course
+from .tasks import update_ranks_for_course_task
 
 
 @receiver(post_save, sender=ActivityEntry)
@@ -17,7 +17,7 @@ def handle_activityentry_save(sender, instance, created, **kwargs):
     enrollment.save(update_fields=["total_points", "balance"])
 
     course = enrollment.group.course
-    update_ranks_for_course(course)
+    update_ranks_for_course_task.delay(course.id)
 
 
 @receiver(post_delete, sender=ActivityEntry)
@@ -29,7 +29,7 @@ def handle_activityentry_delete(sender, instance, **kwargs):
     enrollment.save(update_fields=["total_points", "balance"])
 
     course = enrollment.group.course
-    update_ranks_for_course(course)
+    update_ranks_for_course_task.delay(course.id)
 
 
 @receiver(post_save, sender=PointEntry)

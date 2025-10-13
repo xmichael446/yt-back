@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'main.apps.MainConfig',
+    'django_celery_results'
 ]
 
 MIDDLEWARE = [
@@ -52,6 +53,11 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 300
 
 ROOT_URLCONF = 'YouTrack.urls'
 
