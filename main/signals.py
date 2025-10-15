@@ -40,7 +40,8 @@ def handle_pointentry_save(sender, instance, created, **kwargs):
             action=instance.reason.name.lower().capitalize(),
             points=instance.reason.default_points,
             coins_change=instance.reason.default_coins,
-            linked_point_entry=instance
+            linked_point_entry=instance,
+            for_date=instance.for_date
         )
 
 
