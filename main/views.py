@@ -213,9 +213,9 @@ class ActivitiesView(APIView):
             Enrollment, student=student, group=group
         )
 
-        point_entries_qs = enrollment.activities.all()
-        point_entries = ActivitySerializer(point_entries_qs, many=True).data[::-1][:50]
+        activities_qs = enrollment.activities.order_by("-for_date")
+        activities = ActivitySerializer(activities_qs, many=True).data[::-1][:50]
 
         return Response(
-            {"success": True, "data": point_entries}
+            {"success": True, "data": activities}
         )
