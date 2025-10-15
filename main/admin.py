@@ -7,8 +7,23 @@ from .admin_extras.mixins import UserOwnedQuerysetMixin, AutoCreatedByMixin
 from .models import (
     Course, Student, Enrollment,
     PointReason, PointEntry,
-    Reward, RewardRedemption, ActivityEntry, Group
+    Reward, RewardRedemption, ActivityEntry, Group, YTInstance
 )
+
+@admin.register(YTInstance)
+class YTInstanceAdmin(admin.ModelAdmin):
+    list_display = ("name", "admin", "get_coordinators", "created_at", "updated_at")
+    search_fields = ("name", "admin__username", "coordinators__username")
+    autocomplete_fields = ("admin", "coordinators")
+    filter_horizontal = ("coordinators",)
+
+    def get_coordinators(self, obj):
+        return ", ".join([c.username for c in obj.coordinators.all()])
+    get_coordinators.short_description = "Coordinators"
+
+    class Meta:
+        verbose_name = "YouTrack Instance"
+        verbose_name_plural = "YouTrack Instances"
 
 
 @admin.register(Course)

@@ -1,7 +1,7 @@
 import nested_admin
 from django.contrib import admin
 
-from main.models import Enrollment, Group, Student
+from main.models import Enrollment, Group, Student, YTInstance
 
 
 class EnrollmentInline(nested_admin.NestedTabularInline):
@@ -32,7 +32,18 @@ class GroupInline(nested_admin.NestedStackedInline):
     inlines = [EnrollmentInline]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "course" and not request.user.is_superuser:
-            kwargs["queryset"] = db_field.remote_field.model.objects.filter(created_by=request.user)
+        user = request.user
+
+        if db_field.name == "course" and not user.is_superuser:
+            kwargs["queryset"] = db_field.remote_field.model.objects.filter(created_by=user)
+        elif db_field.name == "coordinator":
+            if user.is_superuser:
+                kwargs["queryset"] = db_field.remote_field.model.objects.filter(is_staff=True)
+            else:
+                try:
+                    yt_instance = YTInstance.objects.get(admin=user)
+                    kwargs["queryset"] = yt_instance.coordinators.all()
+                except YTInstance.DoesNotExist:
+                    kwargs["queryset"] = db_field.remote_field.model.objects.none()
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)

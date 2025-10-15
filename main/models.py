@@ -10,6 +10,8 @@ def generate_access_code(prefix, length):
     digits = ''.join(random.choices(string.digits, k=length))
     return f"{prefix}{digits}"
 
+YT_INSTANCE_LIMIT = {"is_staff": True, "is_superuser": False}
+
 
 class TimestampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -17,6 +19,18 @@ class TimestampedModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class YTInstance(TimestampedModel):
+    name = models.CharField(max_length=100, unique=True)
+    admin = models.OneToOneField(User, on_delete=models.CASCADE, related_name="yt_admin_instance", limit_choices_to=YT_INSTANCE_LIMIT)
+    coordinators = models.ManyToManyField(User, related_name="yt_coordinators", limit_choices_to=YT_INSTANCE_LIMIT)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "YouTrack Instance"
 
 
 class Course(TimestampedModel):
