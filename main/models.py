@@ -42,7 +42,7 @@ class Group(TimestampedModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.name} ({self.course})"
+        return f"{self.name} | {self.course}"
 
 
 class Student(TimestampedModel):
@@ -75,7 +75,7 @@ class Enrollment(TimestampedModel):
         unique_together = ("student", "group")
 
     def __str__(self):
-        return f"{self.student} in {self.group}"
+        return f"{self.student} | {self.group}"
 
 
 class PointReason(TimestampedModel):
@@ -90,6 +90,7 @@ class PointReason(TimestampedModel):
 class PointEntry(TimestampedModel):
     reason = models.ForeignKey(PointReason, on_delete=models.SET_NULL, null=True, related_name="point_entries")
     enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name="point_entries")
+    for_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.enrollment} - {self.reason} ({self.reason.default_points})"
@@ -119,6 +120,7 @@ class ActivityEntry(TimestampedModel):
     points = models.PositiveIntegerField(default=0)
     coins_change = models.IntegerField(default=0, help_text="Coins earned (positive) or spent (negative)")
     linked_point_entry = models.ForeignKey(PointEntry, on_delete=models.CASCADE, null=True, blank=True)
+    for_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.enrollment.student} | {self.action} | XP: {self.points} | Coins: {self.coins_change}"

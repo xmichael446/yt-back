@@ -2,12 +2,12 @@ import nested_admin
 from django.contrib import admin
 from django.db.models import Q
 
-from .admin_extras.inlines import GroupInline
+from .admin_extras.inlines import GroupInline, EnrollmentInline
 from .admin_extras.mixins import UserOwnedQuerysetMixin, AutoCreatedByMixin
 from .models import (
     Course, Student, Enrollment,
     PointReason, PointEntry,
-    Reward, RewardRedemption, ActivityEntry
+    Reward, RewardRedemption, ActivityEntry, Group
 )
 
 
@@ -22,11 +22,21 @@ class CourseAdmin(UserOwnedQuerysetMixin, AutoCreatedByMixin, nested_admin.Neste
         return qs.filter(created_by=request.user)
 
 
+@admin.register(Group)
+class GroupAdmin(UserOwnedQuerysetMixin, nested_admin.NestedModelAdmin):
+    list_display = ("name", "access_code", "coordinator", "course",)
+    readonly_fields = ("access_code",)
+    inlines = [EnrollmentInline]
+
+    def filter_for_user(self, qs, request):
+        return qs.filter(Q(coordinator=request.user) | Q(course__created_by=request.user))
+
+
 @admin.register(Student)
 class StudentAdmin(UserOwnedQuerysetMixin, AutoCreatedByMixin, admin.ModelAdmin):
-    list_display = ("first_name", "last_name", "access_code", "created_by", "created_at")
+    list_display = ("first_name", "last_name", "access_code", "created_by",)
     search_fields = ("first_name", "last_name", "access_code")
-    readonly_fields = ("access_code", "created_by", "created_at")
+    readonly_fields = ("access_code", "created_by",)
 
     def filter_for_user(self, qs, request):
         return qs.filter(created_by=request.user)
@@ -63,25 +73,26 @@ class PointReasonAdmin(admin.ModelAdmin):
 
 @admin.register(PointEntry)
 class PointEntryAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
-    list_display = ("enrollment", "reason", "created_at")
+    list_display = ("enrollment", "reason", "for_date")
     list_filter = ("reason",)
     search_fields = (
         "enrollment__student__first_name",
         "enrollment__student__last_name",
         "reason__name",
     )
+    date_hierarchy = "for_date"
 
     def filter_for_user(self, qs, request):
         return qs.filter(Q(enrollment__student__created_by=request.user) | Q(enrollment__group__coordinator=request.user))
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "enrollment":
-            Enrollment = self.model._meta.get_field("enrollment").remote_field.model
+            _Enrollment = self.model._meta.get_field("enrollment").remote_field.model
 
             if request.user.is_superuser:
-                kwargs["queryset"] = Enrollment.objects.all()
+                kwargs["queryset"] = _Enrollment.objects.all()
             else:
-                kwargs["queryset"] = Enrollment.objects.filter(
+                kwargs["queryset"] = _Enrollment.objects.filter(
                     group__coordinator=request.user
                 )
 
@@ -117,10 +128,11 @@ class RewardRedemptionAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
 
 @admin.register(ActivityEntry)
 class ActivityEntryAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
-    list_display = ("enrollment", "action", "points", "coins_change", "created_at")
-    list_filter = ("action", "created_at")
+    list_display = ("enrollment", "action", "points", "coins_change", "for_date")
+    list_filter = ("action", "for_date")
     search_fields = ("enrollment__student__first_name", "enrollment__student__last_name")
-    ordering = ("-created_at",)
+    ordering = ("-for_date",)
+    date_hierarchy = "for_date"
 
     def filter_for_user(self, qs, request):
         return qs.filter(Q(enrollment__student__created_by=request.user) | Q(enrollment__group__coordinator=request.user))

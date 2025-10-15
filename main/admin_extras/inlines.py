@@ -7,7 +7,7 @@ from main.models import Enrollment, Group, Student
 class EnrollmentInline(nested_admin.NestedTabularInline):
     model = Enrollment
     extra = 1
-    readonly_fields = ("total_points", "rank", "balance")
+    fields = ("student", "group",)
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if not request.user.is_superuser:

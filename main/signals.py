@@ -1,7 +1,7 @@
 import requests
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from .models import PointEntry, ActivityEntry, Student
+from .models import PointEntry, ActivityEntry, Student, Enrollment
 from .tasks import update_ranks_for_course_task, send_student_to_cd_mock
 
 
@@ -42,15 +42,6 @@ def handle_pointentry_save(sender, instance, created, **kwargs):
             coins_change=instance.reason.default_coins,
             linked_point_entry=instance
         )
-
-
-@receiver(post_delete, sender=PointEntry)
-def handle_pointentry_delete(sender, instance, **kwargs):
-    try:
-        activity = ActivityEntry.objects.get(linked_point_entry=instance)
-        activity.delete()
-    except ActivityEntry.DoesNotExist:
-        pass
 
 
 @receiver(post_save, sender=Student)
