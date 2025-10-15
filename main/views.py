@@ -213,8 +213,8 @@ class ActivitiesView(APIView):
             Enrollment, student=student, group=group
         )
 
-        activities_qs = enrollment.activities.order_by("-for_date")[:50]  # get latest 50
-        activities = ActivitySerializer(activities_qs, many=True).data[::-1]  # reverse to oldest→newest
+        activities_qs = enrollment.activities.order_by("-for_date", "-created_at")[:50]
+        activities = ActivitySerializer(activities_qs, many=True).data
 
         return Response(
             {"success": True, "data": activities}
