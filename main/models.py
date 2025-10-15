@@ -51,7 +51,7 @@ class Group(TimestampedModel):
         if not self.access_code:
             code = generate_access_code("YT-G", 4)
             while Group.objects.filter(access_code=code).exists():
-                code = generate_access_code()
+                code = generate_access_code("YT-G", 4)
             self.access_code = code
         super().save(*args, **kwargs)
 
@@ -69,7 +69,7 @@ class Student(TimestampedModel):
         if not self.access_code:
             code = generate_access_code("YT-E", 6)
             while Student.objects.filter(access_code=code).exists():
-                code = generate_access_code()
+                code = generate_access_code("YT-E", 6)
             self.access_code = code
         super().save(*args, **kwargs)
 

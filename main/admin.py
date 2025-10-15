@@ -38,13 +38,31 @@ class CourseAdmin(UserOwnedQuerysetMixin, AutoCreatedByMixin, nested_admin.Neste
 
 
 @admin.register(Group)
-class GroupAdmin(UserOwnedQuerysetMixin, nested_admin.NestedModelAdmin):
+class GroupAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
     list_display = ("name", "access_code", "coordinator", "course",)
     readonly_fields = ("access_code",)
     inlines = [EnrollmentInline]
 
     def filter_for_user(self, qs, request):
         return qs.filter(Q(coordinator=request.user) | Q(course__created_by=request.user))
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        user = request.user
+
+        if db_field.name == "course" and not user.is_superuser:
+            kwargs["queryset"] = db_field.remote_field.model.objects.filter(created_by=user)
+        elif db_field.name == "coordinator":
+            if user.is_superuser:
+                kwargs["queryset"] = db_field.remote_field.model.objects.filter(is_staff=True)
+            else:
+                try:
+                    yt_instance = YTInstance.objects.get(admin=user)
+                    kwargs["queryset"] = yt_instance.coordinators.all()
+                except YTInstance.DoesNotExist:
+                    kwargs["queryset"] = db_field.remote_field.model.objects.none()
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 
 @admin.register(Student)
