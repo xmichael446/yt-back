@@ -50,4 +50,4 @@ class RewardRedemptionSerializer(serializers.ModelSerializer):
 class ActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = ActivityEntry
-        fields = ["action", "created_at", "points", "coins_change"]
+        fields = ["action", "for_date", "points", "coins_change"]

@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -161,7 +162,6 @@ class RewardClaimView(APIView):
             Reward, id=reward_id, course=enrollment.group.course
         )
 
-        # Prevent duplicate claim
         if RewardRedemption.objects.filter(enrollment=enrollment, reward=reward).exists():
             return Response(
                 {"success": False, "message": "Reward already claimed"},
@@ -182,6 +182,7 @@ class RewardClaimView(APIView):
             action=f'Claimed "{reward.name}"',
             points=0,
             coins_change=-reward.cost,
+            for_date=timezone.now().date(),
         )
 
         redemption = RewardRedemption.objects.create(enrollment=enrollment, reward=reward)
