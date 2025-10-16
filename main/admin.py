@@ -10,6 +10,11 @@ from .models import (
     Reward, RewardRedemption, ActivityEntry, Group, YTInstance
 )
 
+admin.site.site_header = "YouTrack Administration"
+admin.site.site_title = "YouTrack Admin"
+admin.site.index_title = "Welcome to the YouTrack Admin"
+
+
 @admin.register(YTInstance)
 class YTInstanceAdmin(admin.ModelAdmin):
     list_display = ("name", "admin", "get_coordinators", "get_point_reasons", "created_at", "updated_at")
