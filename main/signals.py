@@ -1,7 +1,7 @@
 import requests
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from .models import PointEntry, ActivityEntry, Student, Enrollment
+from .models import PointEntry, ActivityEntry, Student, Enrollment, YTInstance
 from .tasks import update_ranks_for_course_task, send_student_to_cd_mock
 
 
@@ -45,12 +45,27 @@ def handle_pointentry_save(sender, instance, created, **kwargs):
         )
 
 
-# @receiver(post_save, sender=Student)
-# def create_cd_mock_student(sender, instance, created, **kwargs):
-#     if created:
-#         send_student_to_cd_mock.delay(
-#             instance.access_code,
-#             instance.first_name,
-#             instance.last_name,
-#             instance.created_by.username)
+@receiver(post_save, sender=Student)
+def create_cd_mock_student(sender, instance, created, **kwargs):
+    if not created:
+        return
 
+    created_by = instance.created_by
+    target_user = created_by  # default
+
+    try:
+        yt_instance = YTInstance.objects.get(admin=created_by)
+        target_user = yt_instance.admin
+    except YTInstance.DoesNotExist:
+        try:
+            yt_instance = YTInstance.objects.get(coordinators=created_by)
+            target_user = yt_instance.admin
+        except YTInstance.DoesNotExist:
+            pass
+
+    send_student_to_cd_mock.delay(
+        instance.access_code,
+        instance.first_name,
+        instance.last_name,
+        target_user.username
+    )
