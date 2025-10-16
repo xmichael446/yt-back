@@ -45,12 +45,12 @@ def handle_pointentry_save(sender, instance, created, **kwargs):
         )
 
 
-@receiver(post_save, sender=Student)
-def create_cd_mock_student(sender, instance, created, **kwargs):
-    if created:
-        send_student_to_cd_mock.delay(
-            instance.access_code,
-            instance.first_name,
-            instance.last_name,
-            instance.created_by.username)
+# @receiver(post_save, sender=Student)
+# def create_cd_mock_student(sender, instance, created, **kwargs):
+#     if created:
+#         send_student_to_cd_mock.delay(
+#             instance.access_code,
+#             instance.first_name,
+#             instance.last_name,
+#             instance.created_by.username)
 

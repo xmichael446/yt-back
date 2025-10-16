@@ -21,18 +21,6 @@ class TimestampedModel(models.Model):
         abstract = True
 
 
-class YTInstance(TimestampedModel):
-    name = models.CharField(max_length=100, unique=True)
-    admin = models.OneToOneField(User, on_delete=models.CASCADE, related_name="yt_admin_instance", limit_choices_to=YT_INSTANCE_LIMIT)
-    coordinators = models.ManyToManyField(User, related_name="yt_coordinators", limit_choices_to=YT_INSTANCE_LIMIT)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = "YouTrack Instance"
-
-
 class Course(TimestampedModel):
     name = models.CharField(max_length=255)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -99,6 +87,19 @@ class PointReason(TimestampedModel):
 
     def __str__(self):
         return self.name
+
+
+class YTInstance(TimestampedModel):
+    name = models.CharField(max_length=100, unique=True)
+    admin = models.OneToOneField(User, on_delete=models.CASCADE, related_name="yt_admin_instance", limit_choices_to=YT_INSTANCE_LIMIT)
+    coordinators = models.ManyToManyField(User, related_name="yt_coordinators", limit_choices_to=YT_INSTANCE_LIMIT)
+    point_reasons = models.ManyToManyField(PointReason, related_name="yt_point_reasons", blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "YouTrack Instance"
 
 
 class PointEntry(TimestampedModel):

@@ -12,14 +12,18 @@ from .models import (
 
 @admin.register(YTInstance)
 class YTInstanceAdmin(admin.ModelAdmin):
-    list_display = ("name", "admin", "get_coordinators", "created_at", "updated_at")
+    list_display = ("name", "admin", "get_coordinators", "get_point_reasons", "created_at", "updated_at")
     search_fields = ("name", "admin__username", "coordinators__username")
-    autocomplete_fields = ("admin", "coordinators")
-    filter_horizontal = ("coordinators",)
+    autocomplete_fields = ("admin", "coordinators", "point_reasons")
+    filter_horizontal = ("coordinators", "point_reasons")
 
     def get_coordinators(self, obj):
         return ", ".join([c.username for c in obj.coordinators.all()])
     get_coordinators.short_description = "Coordinators"
+
+    def get_point_reasons(self, obj):
+        return ", ".join([c.name for c in obj.point_reasons.all()])
+    get_point_reasons.short_description = "Point Reasons"
 
     class Meta:
         verbose_name = "YouTrack Instance"
@@ -72,7 +76,25 @@ class StudentAdmin(UserOwnedQuerysetMixin, AutoCreatedByMixin, admin.ModelAdmin)
     readonly_fields = ("access_code", "created_by",)
 
     def filter_for_user(self, qs, request):
-        return qs.filter(created_by=request.user)
+        user = request.user
+
+        if user.is_superuser:
+            return qs
+
+        try:
+            yt_instance = YTInstance.objects.get(admin=user)
+            coordinator_ids = yt_instance.coordinators.values_list("id", flat=True)
+            return qs.filter(Q(created_by=user) | Q(created_by__in=coordinator_ids))
+        except YTInstance.DoesNotExist:
+            pass
+
+        try:
+            yt_instance = YTInstance.objects.get(coordinators=user)
+            return qs.filter(Q(created_by=user) | Q(created_by=yt_instance.admin))
+        except YTInstance.DoesNotExist:
+            pass
+
+        return qs.filter(created_by=user)
 
 
 @admin.register(Enrollment)
@@ -88,18 +110,38 @@ class EnrollmentAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
     student_access_code.short_description = "Access Code"
 
     def filter_for_user(self, qs, request):
-        return qs.filter(Q(student__created_by=request.user) | Q(group__coordinator=request.user))
+        return qs.filter(
+            Q(student__created_by=request.user) |
+            Q(group__coordinator=request.user)
+        )
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if not request.user.is_superuser:
-            if db_field.name == "student":
-                kwargs["queryset"] = Student.objects.filter(created_by=request.user)
+        user = request.user
 
-            if db_field.name == "group":
-                kwargs["queryset"] = (
-                    self.model._meta.get_field("group")
-                    .remote_field.model.objects.filter(course__created_by=request.user)
-                )
+        if db_field.name == "student":
+            if not user.is_superuser:
+                kwargs["queryset"] = Student.objects.filter(created_by=user)
+
+        elif db_field.name == "group":
+            GroupModel = db_field.remote_field.model
+
+            if user.is_superuser:
+                kwargs["queryset"] = GroupModel.objects.all()
+
+            else:
+                try:
+                    # Case 1: user is an instance admin
+                    yt_instance = YTInstance.objects.get(admin=user)
+                    kwargs["queryset"] = GroupModel.objects.filter(course__created_by=user)
+
+                except YTInstance.DoesNotExist:
+                    try:
+                        # Case 2: user is a coordinator in an instance
+                        yt_instance = YTInstance.objects.get(coordinators=user)
+                        kwargs["queryset"] = GroupModel.objects.filter(coordinator=user)
+                    except YTInstance.DoesNotExist:
+                        # Case 3: fallback (no YTInstance link)
+                        kwargs["queryset"] = GroupModel.objects.none()
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
@@ -125,15 +167,15 @@ class PointEntryAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
         return qs.filter(Q(enrollment__student__created_by=request.user) | Q(enrollment__group__coordinator=request.user))
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "enrollment":
-            _Enrollment = self.model._meta.get_field("enrollment").remote_field.model
+        if not request.user.is_superuser:
+            if db_field.name == "enrollment":
+                _Enrollment = self.model._meta.get_field("enrollment").remote_field.model
 
-            if request.user.is_superuser:
-                kwargs["queryset"] = _Enrollment.objects.all()
-            else:
-                kwargs["queryset"] = _Enrollment.objects.filter(
-                    group__coordinator=request.user
-                )
+                kwargs["queryset"] = _Enrollment.objects.filter(group__coordinator=request.user)
+            elif db_field.name == "reason":
+                yt_instance = YTInstance.objects.get(coordinators=request.user)
+                kwargs["queryset"] = yt_instance.point_reasons
+
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
