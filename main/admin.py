@@ -105,7 +105,7 @@ class StudentAdmin(UserOwnedQuerysetMixin, AutoCreatedByMixin, admin.ModelAdmin)
 @admin.register(Enrollment)
 class EnrollmentAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
     list_display = ("student", "group", "student_access_code", "total_points", "rank", "balance", "is_active")
-    list_filter = ("group__course", "is_active")
+    list_filter = ("is_active", )
     search_fields = ("student__first_name", "student__last_name", "group__name")
 
     def student_access_code(self, obj):
