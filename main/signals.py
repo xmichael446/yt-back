@@ -45,27 +45,14 @@ def handle_pointentry_save(sender, instance, created, **kwargs):
         )
 
 
-@receiver(post_save, sender=Student)
+@receiver(post_save, sender=Enrollment)
 def create_cd_mock_student(sender, instance, created, **kwargs):
     if not created:
         return
 
-    created_by = instance.created_by
-    target_user = created_by  # default
-
-    try:
-        yt_instance = YTInstance.objects.get(admin=created_by)
-        target_user = yt_instance.admin
-    except YTInstance.DoesNotExist:
-        try:
-            yt_instance = YTInstance.objects.get(coordinators=created_by)
-            target_user = yt_instance.admin
-        except YTInstance.DoesNotExist:
-            pass
-
     send_student_to_cd_mock.delay(
-        instance.access_code,
-        instance.first_name,
-        instance.last_name,
-        target_user.username
+        instance.student.access_code,
+        instance.student.first_name,
+        instance.student.last_name,
+        instance.group.course.created_by.username
     )

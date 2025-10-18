@@ -160,10 +160,10 @@ class PointReasonAdmin(admin.ModelAdmin):
 @admin.register(PointEntry)
 class PointEntryAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
     list_display = ("enrollment", "reason", "for_date")
-    list_filter = ("reason",)
     search_fields = (
         "enrollment__student__first_name",
         "enrollment__student__last_name",
+        "enrollment__student__access_code",
         "reason__name",
     )
     date_hierarchy = "for_date"
