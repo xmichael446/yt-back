@@ -135,26 +135,36 @@ class EnrollmentAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
 
             else:
                 try:
-                    # Case 1: user is an instance admin
                     yt_instance = YTInstance.objects.get(admin=user)
                     kwargs["queryset"] = GroupModel.objects.filter(course__created_by=user)
 
                 except YTInstance.DoesNotExist:
                     try:
-                        # Case 2: user is a coordinator in an instance
                         yt_instance = YTInstance.objects.get(coordinators=user)
                         kwargs["queryset"] = GroupModel.objects.filter(coordinator=user)
                     except YTInstance.DoesNotExist:
-                        # Case 3: fallback (no YTInstance link)
                         kwargs["queryset"] = GroupModel.objects.none()
 
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 @admin.register(PointReason)
-class PointReasonAdmin(admin.ModelAdmin):
+class PointReasonAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
     list_display = ("name", "default_points", "default_coins")
-    search_fields = ("name",)
+    search_fields = ("name", )
+
+    def filter_for_user(self, qs, request):
+        user = request.user
+
+        try:
+            yt_instance = YTInstance.objects.get(admin=user)
+            return yt_instance.point_reasons
+        except YTInstance.DoesNotExist:
+            try:
+                yt_instance = YTInstance.objects.get(coordinators=user)
+                return yt_instance.point_reasons
+            except YTInstance.DoesNotExist:
+                return PointReason.objects.none()
 
 
 @admin.register(PointEntry)
