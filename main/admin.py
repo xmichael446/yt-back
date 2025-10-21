@@ -107,6 +107,7 @@ class EnrollmentAdmin(UserOwnedQuerysetMixin, admin.ModelAdmin):
     list_display = ("student", "group", "student_access_code", "total_points", "rank", "balance", "is_active")
     list_filter = ("is_active", )
     search_fields = ("student__first_name", "student__last_name", "group__name")
+    readonly_fields = ("total_points", "rank", "balance")
 
     def student_access_code(self, obj):
         if obj and obj.student:

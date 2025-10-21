@@ -11,11 +11,6 @@ def handle_activityentry_save(sender, instance, created, **kwargs):
         return
 
     enrollment = instance.enrollment
-
-    enrollment.total_points += instance.points
-    enrollment.balance += instance.coins_change
-    enrollment.save(update_fields=["total_points", "balance"])
-
     course = enrollment.group.course
     update_ranks_for_course_task.delay(course.id)
 
@@ -23,11 +18,6 @@ def handle_activityentry_save(sender, instance, created, **kwargs):
 @receiver(post_delete, sender=ActivityEntry)
 def handle_activityentry_delete(sender, instance, **kwargs):
     enrollment = instance.enrollment
-
-    enrollment.total_points -= instance.points
-    enrollment.balance -= instance.coins_change
-    enrollment.save(update_fields=["total_points", "balance"])
-
     course = enrollment.group.course
     update_ranks_for_course_task.delay(course.id)
 
